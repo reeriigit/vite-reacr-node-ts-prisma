@@ -1,0 +1,29 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  user_id       Int      @id @default(autoincrement())  // Primary Key แบบ Auto Increment
+  referral_code String
+  referred_by   String?
+  username      String   @unique                       // username ควรมีการกำหนดค่าเป็น unique
+  email         String   @unique                       // email ควรมีการกำหนดค่าเป็น unique
+  password      String
+  fullname      String
+  address       String
+  phone_number  String
+  usertype_id   Int
+
+  @@map("users")  // กำหนดชื่อของตารางในฐานข้อมูลเป็น "users"
+}
