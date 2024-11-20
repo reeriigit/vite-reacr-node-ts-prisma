@@ -12,18 +12,110 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 model Users {
-  user_id       Int      @id @default(autoincrement())  // Primary Key แบบ Auto Increment
+  user_id       Int       @id @default(autoincrement())  // Primary Key แบบ Auto Increment
   referral_code String
   referred_by   String?
-  username      String   @unique                       // username ควรมีการกำหนดค่าเป็น unique
-  email         String   @unique                       // email ควรมีการกำหนดค่าเป็น unique
+  username      String    @unique                       // username ควรมีการกำหนดค่าเป็น unique
+  email         String    @unique                       // email ควรมีการกำหนดค่าเป็น unique
   password      String
   fullname      String
   address       String
   phone_number  String
   usertype_id   Int
 
+  // Relation with Stores
+  stores        Stores[]  @relation("UserStores")       // Relation with Stores model
+
   @@map("users")  // กำหนดชื่อของตารางในฐานข้อมูลเป็น "users"
 }
+model ProductType {
+  producttype_id    Int       @id @default(autoincrement()) // Primary key with auto-increment
+  storeId           Int                                          // Foreign key to the Stores model
+  producttype_name  String                                       // Name of the product type
+  producttype_image String?                                      // Optional field for image, typically a path or URL
+  description       String?                                      // Optional description field
+  submncondt        Int?                                         // Optional field for additional details
+
+  store             Stores    @relation(fields: [storeId], references: [storeId]) // Relation to Stores model
+
+  // เพิ่มความสัมพันธ์ย้อนกลับกับ Product
+  products          Product[] @relation("ProductTypeProducts")                     
+
+  @@map("product_type_tb")                                       // Map this model to the "product_type_tb" table
+}
+
+model Stores {
+  storeId      Int       @id @default(autoincrement()) // Primary key with auto-increment
+  user_id      Int                                         // Foreign key to the Users model
+  logo         String?   @db.Text                          // Text field for larger amounts of text, typically used for larger logos or descriptions
+  storeName    String                                      // Store name
+  storeType    Int                                         // Store type
+  storeDes     String?                                     // Optional field for store description
+  style        Int                                         // Optional field for style
+  province     String?                                     // Optional field for province
+  phone        String?                                     // Optional field for phone number
+  address      String?                                     // Optional field for address
+  status       Int                                         // Status, can be used to represent active/inactive
+
+  user         Users      @relation("UserStores", fields: [user_id], references: [user_id]) // Foreign key reference to Users model
+  productTypes ProductType[]                               // One-to-many relation with ProductType
+
+  // เพิ่มความสัมพันธ์ย้อนกลับกับ Product
+  products     Product[] @relation("StoreProducts")                  
+
+  @@map("stores")                                          // Map this model to the "stores" table
+}
+
+model Product {
+  product_id       Int       @id @default(autoincrement())        // Primary key with auto-increment
+  images           String[]  @db.Text                             // Array of strings for storing image filenames
+  name             String                                         // Product name
+  product_type_id  Int                                            // Foreign key to ProductType model
+  description      String?   @db.Text                             // Text field for storing larger description
+  price            Float                                          // Product price
+  cost_price       Float                                          // Cost price of the product
+  status_id        Int                                            // Status identifier
+  storeId          Int                                            // Foreign key to Stores model
+
+  // Relations
+  productType      ProductType  @relation("ProductTypeProducts", fields: [product_type_id], references: [producttype_id]) // Relation to ProductType model
+  store            Stores       @relation("StoreProducts", fields: [storeId], references: [storeId])                     // Relation to Stores model
+
+  @@map("product_tb")                                             // Map this model to the "product_tb" table
+}
+
+
+model Promotions {
+  promo_id        Int       @id @default(autoincrement())
+  storeId         Int
+  proimage        String?    @db.Text
+  promo_name      String    @db.VarChar(255)
+  promo_type      Int       
+  promo_dec       String    @db.Text
+  amountuse       Int
+  amountgiven     Int
+  valuegiven_id   Int
+  amountcon       Int
+  valuecon_id     Int
+  startdate       String    @db.VarChar(255)
+  enddate         String    @db.VarChar(255)
+  thtime          Int       @default(1)
+
+  // Relation fields
+  PromotionType   PromotionType @relation(fields: [promo_type], references: [promo_type_id])
+  
+}
+
+model PromotionType {
+  promo_type_id   Int       @id @default(autoincrement())
+  promo_type_name String    @db.VarChar(255)
+  description     String?   @db.Text
+
+  // Back relation to Promotions
+  Promotions      Promotions[]
+}
+
+
+
+

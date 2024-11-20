@@ -1,28 +1,35 @@
-// src/middleware/authMiddleware.ts
+// Middleware for token verification and setting req.user
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { prisma } from '../dbconnect/db';
 
 export interface AuthenticatedRequest extends Request {
-  user?: { userId: number; email: string }; // Define the structure of the decoded user data
+  user?: { userId: number; email: string; storeIds?: number[] };
 }
 
-// Middleware for token verification
-export const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
-  const authHeader = req.headers.authorization;
-  console.log("my token ",authHeader)
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+export const authenticateToken = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  const token = req.cookies.token;
+  if (!token) {
     res.status(401).json({ error: "No token provided or invalid token format" });
     return;
   }
 
-  const token = authHeader.split(' ')[1];
-
   try {
     const decoded = jwt.verify(token, process.env.TOKEN_SECRET!) as { userId: number; email: string };
-    req.user = decoded; // Attach decoded user data to req.user
-    next(); // Proceed to the next middleware/route handler
+    req.user = { userId: decoded.userId, email: decoded.email };
+
+    // Fetch associated storeIds for the user
+    const stores = await prisma.stores.findMany({
+      where: { user_id: decoded.userId },
+      select: { storeId: true },
+    });
+
+    // Add storeIds to req.user
+    req.user.storeIds = stores.map(store => store.storeId);
+    next();
   } catch (error) {
     res.status(403).json({ error: "Token verification failed" });
   }
 };
+
+    
